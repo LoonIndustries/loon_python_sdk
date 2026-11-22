@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "loon_python_sdk"
+version = "0.1.0"
+description = "Loon Industries Python SDK"
+requires-python = ">=3.8"
+dependencies = [
+    "websocket-client>=1.6.0",
+    "pyserial>=3.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]   
