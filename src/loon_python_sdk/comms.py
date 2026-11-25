@@ -1,22 +1,6 @@
-"""Interactive test client for the Loon ESP32 websocket comm protocol.
-
-Mirrors the wire format defined in include/comm.h:
-    [START 1B][TYPE 1B][SIZE 1B][CONTENT 0-200B][CHECKSUM 1B]
-CHECKSUM = low byte of the sum of TYPE, SIZE, and all CONTENT bytes.
-All multi-byte payload fields are little-endian.
-
-Setup:
-    pip install websocket-client
-    1. Connect this computer's WiFi to the "Loon-ESP32" AP (password "loonrobot").
-    2. python comm_test.py                      # defaults to ws://192.168.4.1:80/ws
-
-Usage:
-    python comm_test.py [--host 192.168.4.1] [--port 80]
-"""
 import struct
-from enum import IntEnum
 
-from loonpythonsdk.enums import MsgType
+from loon_python_sdk.enums import MsgType
 
 START_BYTE = 0x7E
 MAX_PAYLOAD = 200

@@ -1,1 +1,92 @@
-# LoonPythonSDK
+# Loon Python SDK
+
+Official Python SDK for communicating with and controlling the **Loon Industries robotic arm**.
+
+Python APIs for both **WebSocket (WiFi)** and **Serial (USB)** communication, supporting direct joint angle commands, Cartesian pose control (Inverse Kinematics), motor homing, PID gain configuration, and real-time telemetry streaming.
+
+---
+
+## Features
+
+- **Dual Transports**: Seamlessly switch between WiFi WebSocket (`ws://...`) and USB Serial (`/dev/ttyUSB0` or `COM3`).
+- **Joint & IK Control**: Command direct joint angles or stream Cartesian end-effector coordinates solved by the on-board IK engine.
+- **Real-Time Telemetry**: Automatically parses and tracks angles, target positions, RPM speeds, and CAN bus states.
+---
+
+## Installation
+
+```bash
+pip install loon-python-sdk
+```
+
+Or install locally in editable mode:
+
+```bash
+git clone https://github.com/LoonIndustries/loon_python_sdk.git
+cd loon_python_sdk
+pip install -e .
+```
+
+---
+
+## Quickstart
+
+### 1. Control Over WiFi (WebSocket)
+
+```python
+from loonpythonsdk import Client
+
+# Connect to the ESP32 access point (default: 192.168.4.1)
+client = Client.from_websocket("ws://192.168.4.1:80/ws")
+client.start()
+
+# 1. Command all 6 joint angles directly (degrees)
+# (base, shoulder, elbow, wrist, twist, claw)
+client.set_joint_angles(base=0.0, shoulder=20.0, elbow=45.0, wrist=-15.0, twist=0.0, claw=50.0)
+
+# 2. Command an individual motor angle
+client.set_angle(can_id=6, degrees=70.0)  # Open claw
+
+# 3. Disconnect
+client.close()
+```
+
+### 2. Control Over USB (Serial)
+
+```python
+from loonpythonsdk import Client
+
+# Connect via USB serial
+client = Client.from_serial("/dev/ttyUSB0", baudrate=115200)
+client.start()
+
+# Home arm motors 2, 3, and 4 in sequence
+client.home_arm()
+
+client.close()
+```
+
+### 3. Cartesian Pose Control (Inverse Kinematics)
+
+```python
+# Command end-effector pose (x, y, z, roll, pitch, yaw, grip)
+# The ESP32's on-board IK solver computes target joint angles automatically
+client.set_pose(x=200.0, y=0.0, z=150.0, roll=0.0, pitch=15.0, yaw=0.0, grip=30.0)
+```
+
+### 4. Listening to Real-Time Telemetry
+
+```python
+def on_telemetry(motors):
+    for m in motors:
+        print(f"Motor {m['can_id']}: pos={m['position_deg']:.1f}°, speed={m['speed_rpm']} RPM")
+
+client = Client.from_websocket("ws://192.168.4.1:80/ws", on_telemetry=on_telemetry)
+client.start()
+```
+
+---
+
+## License
+
+This project is licensed under the [Apache-2.0 License](LICENSE).

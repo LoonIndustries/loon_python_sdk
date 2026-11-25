@@ -16,6 +16,9 @@ class MsgType(IntEnum):
     CONFIG_HOMING = 0x24
     EXECUTE_HOMING = 0x25
     HOME_ARM = 0x26
+    MOTOR_SET_CURRENT = 0x27
+    MOTOR_SET_ACCEL = 0x28
+    MOTOR_SET_SPEED = 0x29
     MOTOR_TELEMETRY = 0x30
 
 class ClientType(IntEnum):
