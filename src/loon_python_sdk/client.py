@@ -51,10 +51,14 @@ class Loon5Arm:
         # ESP32 and quickly bury any other output, so they're hidden by default.
         self.show_telemetry: bool = False
         self.show_heartbeat: bool = False
+    def __enter__(self):
+        self.start();
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close();
 
     @classmethod
     def from_websocket(
-        cls,
+        self,
         url: str,
         on_telemetry: Optional[Callable[[List[dict]], None]] = None,
     ) -> "Loon5Arm":
@@ -71,12 +75,12 @@ class Loon5Arm:
         transport = WebSocketTransport(
             url, on_frame_received=lambda frame: instance._handle_frame(frame)
         )
-        instance = cls(transport, on_telemetry=on_telemetry)
+        instance = self(transport, on_telemetry=on_telemetry)
         return instance
 
     @classmethod
     def from_serial(
-        cls,
+        self,
         port: str,
         baudrate: int = 115200,
         on_telemetry: Optional[Callable[[List[dict]], None]] = None,
@@ -97,7 +101,7 @@ class Loon5Arm:
             baudrate=baudrate,
             on_frame_received=lambda frame: instance._handle_frame(frame),
         )
-        instance = cls(transport, on_telemetry=on_telemetry)
+        instance = self(transport, on_telemetry=on_telemetry)
         return instance
 
     def start(self, timeout: float = 10.0) -> None:
@@ -114,6 +118,9 @@ class Loon5Arm:
             raise RuntimeError("No transport configured for client.")
         self.transport.start(timeout=timeout)
         self.started = True
+
+    def is_connected(self) -> bool:
+        return self.started;
 
     def _handle_frame(self, message: bytes) -> None:
         """Internal callback invoked when raw binary frames are received from transport.
@@ -285,6 +292,8 @@ class Loon5Arm:
     ) -> None:
         """Convenience alias for `set_joint_angles()`."""
         self.set_joint_angles(base, shoulder, elbow, wrist, twist, claw)
+    def get_angles(self):
+        return [self.telemetry.get(i, {}).get("position_deg", 0.0) for i in range(1, 7)]
 
     def set_pid(self, can_id: int, kp: float, ki: float, kd: float) -> None:
         """Configure PID controller gains for a specific motor on the fly.
