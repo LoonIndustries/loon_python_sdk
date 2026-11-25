@@ -3,13 +3,13 @@
 Official Python SDK for communicating with and controlling the Loon ESP32 robot arm.
 """
 
-from .client import Client
-from .enums import ClientType, MsgType
+from .client import Loon5Arm
+from .enums import TransportType, MsgType
 from .transport import SerialTransport, Transport, WebSocketTransport
 
 __all__ = [
-    "Client",
-    "ClientType",
+    "Loon5Arm",
+    "TransportType",
     "MsgType",
     "Transport",
     "WebSocketTransport",

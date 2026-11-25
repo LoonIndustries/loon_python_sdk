@@ -21,6 +21,6 @@ class MsgType(IntEnum):
     MOTOR_SET_SPEED = 0x29
     MOTOR_TELEMETRY = 0x30
 
-class ClientType(IntEnum):
+class TransportType(IntEnum):
     WEBSOCKET = 0
     SERIAL = 1

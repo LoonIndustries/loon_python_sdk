@@ -17,8 +17,8 @@ from loon_python_sdk.enums import MsgType
 from loon_python_sdk.transport import SerialTransport, Transport, WebSocketTransport
 
 
-class Client:
-    """High-level client for communicating with the Loon ESP32 robot arm controller.
+class Loon5Arm:
+    """High-level client for communicating with the Loon 5 robotic arm.
 
     Provides high-level commands for joint positioning, Cartesian pose control (IK),
     homing, motor PID tuning, telemetry tracking, and heartbeat monitoring across
@@ -57,7 +57,7 @@ class Client:
         cls,
         url: str,
         on_telemetry: Optional[Callable[[List[dict]], None]] = None,
-    ) -> "Client":
+    ) -> "Loon5Arm":
         """Factory method to create and configure a Client using WebSocket transport.
 
         Args:
@@ -80,7 +80,7 @@ class Client:
         port: str,
         baudrate: int = 115200,
         on_telemetry: Optional[Callable[[List[dict]], None]] = None,
-    ) -> "Client":
+    ) -> "Loon5Arm":
         """Factory method to create and configure a Client using Serial transport.
 
         Args:
