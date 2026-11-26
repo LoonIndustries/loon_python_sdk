@@ -70,8 +70,8 @@ def pack_homing_cmd(can_id):
     return struct.pack("<B", can_id)
 
 
-MOTOR_STATE_WIRE_FMT = "<BBB6fB"
-MOTOR_STATE_WIRE_SIZE = struct.calcsize(MOTOR_STATE_WIRE_FMT)  # 28 bytes (trailing `reversed` flag)
+MOTOR_STATE_WIRE_FMT = "<BBB6fBH"
+MOTOR_STATE_WIRE_SIZE = struct.calcsize(MOTOR_STATE_WIRE_FMT)  # 30 bytes (trailing `reversed` flag)
 ACK_FMT = "<BB32s"
 MOTOR_STATUS_NAMES = {0: "offline", 1: "online", 2: "error"}
 
@@ -83,7 +83,7 @@ def parse_motor_telemetry(payload: bytes) -> list:
     motors = []
     for i in range(count):
         chunk = payload[i * MOTOR_STATE_WIRE_SIZE:(i + 1) * MOTOR_STATE_WIRE_SIZE]
-        can_id, enabled, status, pos, target, speed, kp, ki, kd, reversed_ = struct.unpack(MOTOR_STATE_WIRE_FMT, chunk)
+        can_id, enabled, status, pos, target, speed, kp, ki, kd, reversed_, workingCurrentMa = struct.unpack(MOTOR_STATE_WIRE_FMT, chunk)
         motors.append({
             "can_id": can_id,
             "enabled": bool(enabled),
@@ -95,6 +95,7 @@ def parse_motor_telemetry(payload: bytes) -> list:
             "ki": ki,
             "kd": kd,
             "reversed": bool(reversed_),
+            "working_current_ma": workingCurrentMa
         })
     return motors
 
@@ -127,6 +128,7 @@ def describe_payload(msg_type: int, payload: bytes) -> str:
                 f"pos={m['position_deg']:.2f} target={m['target_position_deg']:.2f} speed={m['speed_rpm']:.2f} "
                 f"pid=({m['kp']:.3f},{m['ki']:.3f},{m['kd']:.3f})"
                 f"{' REVERSED' if m['reversed'] else ''}"
+                f"current={m['working_current_ma']}mA "
             )
         return "MOTOR_TELEMETRY:\n" + "\n".join(lines)
     return f"{t.name}, {len(payload)} bytes: {payload.hex()}"
