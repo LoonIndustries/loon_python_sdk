@@ -1,3 +1,4 @@
+import threading
 from typing import Callable, Dict, List, Optional
 
 from loon_python_sdk.comms import (
@@ -13,7 +14,7 @@ from loon_python_sdk.comms import (
     pack_pose,
     parse_motor_telemetry,
 )
-from loon_python_sdk.enums import MsgType
+from loon_python_sdk.enums import MotorTelemetry, MsgType
 from loon_python_sdk.transport import SerialTransport, Transport, WebSocketTransport
 
 
@@ -45,6 +46,7 @@ class Loon5Arm:
         self.transport = transport
         self.on_telemetry = on_telemetry
         self.telemetry: Dict[int, dict] = {}
+        self._telemetry_lock = threading.Lock()
         self.started: bool = False
 
         # Telemetry (~5/sec) and heartbeat (~1/3sec) are broadcast continuously by the
@@ -140,8 +142,9 @@ class Loon5Arm:
         # Handle motor telemetry broadcasts (CAN status, angles, speeds, PID gains)
         if msg_type == MsgType.MOTOR_TELEMETRY:
             parsed = parse_motor_telemetry(payload)
-            for m in parsed:
-                self.telemetry[m["can_id"]] = m
+            with self._telemetry_lock:
+                for m in parsed:
+                    self.telemetry[m["can_id"]] = m
             if self.on_telemetry is not None:
                 self.on_telemetry(parsed)
             if not self.show_telemetry:
@@ -292,8 +295,6 @@ class Loon5Arm:
     ) -> None:
         """Convenience alias for `set_joint_angles()`."""
         self.set_joint_angles(base, shoulder, elbow, wrist, twist, claw)
-    def get_angles(self):
-        return [self.telemetry.get(i, {}).get("position_deg", 0.0) for i in range(1, 7)]
 
     def set_pid(self, can_id: int, kp: float, ki: float, kd: float) -> None:
         """Configure PID controller gains for a specific motor on the fly.
@@ -318,6 +319,33 @@ class Loon5Arm:
             enabled: True to engage active torque control, False to freewheel.
         """
         self.send(MsgType.MOTOR_ENABLE, pack_motor_enable(can_id, enabled))
+
+    def get_motor_telemetry(self, can_id: int) -> Optional[MotorTelemetry]:
+        """Return the latest telemetry for a specific motor, or None if not yet received.
+
+        Args:
+            can_id: CAN bus identifier of the motor.
+
+        Returns:
+            MotorTelemetry dataclass for the requested motor, or None if no
+            telemetry frame has been received for that CAN ID yet.
+        """
+        with self._telemetry_lock:
+            data = self.telemetry.get(can_id)
+            return MotorTelemetry(**data) if data is not None else None
+
+    def get_arm_telemetry(self) -> Dict[int, MotorTelemetry]:
+        """Return the latest telemetry for all motors that have reported in.
+
+        Returns:
+            Dictionary mapping each motor's CAN ID to its latest MotorTelemetry.
+        """
+        with self._telemetry_lock:
+            return {
+                can_id: MotorTelemetry(**data)
+                for can_id, data in self.telemetry.items()
+            }
+
 
     def ping(self) -> None:
         """Send a PING heartbeat request (MsgType.PING / 0x00) to verify link connectivity.
